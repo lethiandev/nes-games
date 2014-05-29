@@ -1,0 +1,1 @@
+NES runtime assembled objects extracted direct from original nes.lib library. I've done it for clean-up the runtime library. Anyway, soon it'll be packet into single static linked library file called 'runtime.lib'.
