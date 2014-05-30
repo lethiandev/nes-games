@@ -15,6 +15,10 @@ void main()
     spr->tile = 0x76;
     spr->attr = 0x00;
 
+    // seek nt addr and write data
+    //vram_seek(0);
+    //vram_data();
+
     while(1) {
     }
 }

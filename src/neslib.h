@@ -39,6 +39,10 @@ typedef unsigned char byte;
 #define PPU_CTRL 0x
 #define PPU_MASK
 
+#define NT_PATTERN(pt)
+#define NT_ADDR(nt)
+#define NT_ATTR(nt)
+
 typedef struct {
     byte y, tile, attr, x;
 } Sprite;
@@ -48,10 +52,9 @@ void ppu_vblankwait();
 void __fastcall__ ppu_init(byte ctr, byte mask);
 void ppu_ram2oam();
 
-// vram nametables
+// vram nametables memory access
 void vram_seek(uint offset);
-void vram_data(const byte *data, byte nt);
-void vram_put(byte data);
+void vram_data(const byte *data, uint size);
 
 // pallete
 void __fastcall__ pal_seek(byte offset);

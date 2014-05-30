@@ -101,7 +101,20 @@ vblankwait2: ; wait for PPU re-charge
     BPL @2
 
     ; fill pallete by default one
+    LDA $2002
+    LDA #$3F ; hi
+    STA $2006
+    LDA #$00 ; low
+    STA $2006
 
+loadPallete:
+    LDX #$00
+@1:
+    LDA defaultPalette, x
+    STA $2007
+    INX
+    CPX #$20
+    BNE @1
 
     ; PPU default controller and mask
     LDA #%10010000 ; enable NMI - the rendering

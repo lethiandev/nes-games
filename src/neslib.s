@@ -9,6 +9,10 @@
 ; void __fastcall__ pal_put(byte color);
 .export _pal_seek, _pal_data, _pal_put
 
+; void vram_seek(uint offset);
+; void vram_data(const byte *data, byte size);
+.export _vram_seek, _vram_data
+
 ; Sprite* __fastcall__ spr_get(byte n);
 .export _spr_get
 
@@ -38,6 +42,12 @@ _ppu_ram2oam:
     STA $4014 ; start sprites data transfer RAM to OAM
     RTS
 
+;;;;;;;;;; VRAM (NAMETABLES)
+_vram_seek: ; A - seek low-bytes, X - seek hi-bytes
+    RTS
+
+_vram_data:
+    RTS
 
 ;;;;;;;;;; PALLETE
 _pal_seek: ; A - seek position
