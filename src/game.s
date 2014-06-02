@@ -11,8 +11,15 @@
 	.importzp	tmp1, tmp2, tmp3, tmp4, ptr1, ptr2, ptr3, ptr4
 	.macpack	longbranch
 	.forceimport	__STARTUP__
-	.import		_spr_get
+	.import		_scroll
+	.import		_ppu_init
+	.import		_vram_seek
+	.import		_vram_data
+	.import		_vram_put
+	.import		_spr_getptr
 	.export		_spr
+	.export		_bg
+	.export		_puts
 	.export		_sync
 	.export		_main
 
@@ -20,6 +27,94 @@
 
 _spr:
 	.word	$0000
+
+.segment	"RODATA"
+
+_bg:
+	.byte	$6B
+	.byte	$6C
+	.byte	$6D
+	.byte	$6F
+L0024:
+	.byte	$48,$45,$4C,$4C,$4F,$00
+
+; ---------------------------------------------------------------
+; void __near__ puts (unsigned char, unsigned char, __near__ const unsigned char*)
+; ---------------------------------------------------------------
+
+.segment	"CODE"
+
+.proc	_puts: near
+
+.segment	"CODE"
+
+	ldy     #$02
+	ldx     #$00
+	lda     (sp),y
+	jsr     shlax4
+	jsr     shlax1
+	sta     ptr1
+	stx     ptr1+1
+	lda     #$00
+	clc
+	adc     ptr1
+	sta     ptr1
+	lda     #$20
+	adc     ptr1+1
+	sta     ptr1+1
+	iny
+	lda     (sp),y
+	clc
+	adc     ptr1
+	ldx     ptr1+1
+	bcc     L0043
+	inx
+L0043:	jsr     _vram_seek
+	jmp     L0011
+L000F:	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     (ptr1),y
+	cmp     #$41
+	bcc     L0013
+	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldx     #$00
+	lda     (ptr1,x)
+	ldy     #$41
+	jsr     decaxy
+	ldy     #$0A
+	jsr     incaxy
+	jmp     L0044
+L0013:	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     (ptr1),y
+	cmp     #$30
+	bcc     L0018
+	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldx     #$00
+	lda     (ptr1,x)
+	ldy     #$30
+	jsr     decaxy
+L0044:	jsr     _vram_put
+L0018:	jsr     ldax0sp
+	jsr     incax1
+	jsr     stax0sp
+L0011:	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     (ptr1),y
+	bne     L000F
+	jmp     incsp4
+
+.endproc
 
 ; ---------------------------------------------------------------
 ; void __near__ sync (void)
@@ -31,6 +126,7 @@ _spr:
 
 .segment	"CODE"
 
+	inc     _scroll+1
 	rts
 
 .endproc
@@ -45,8 +141,15 @@ _spr:
 
 .segment	"CODE"
 
+	lda     #$01
+	jsr     pusha
+	jsr     pusha
+	lda     #<(L0024)
+	ldx     #>(L0024)
+	jsr     pushax
+	jsr     _puts
 	lda     #$00
-	jsr     _spr_get
+	jsr     _spr_getptr
 	sta     _spr
 	stx     _spr+1
 	sta     ptr1
@@ -75,7 +178,19 @@ _spr:
 	lda     #$00
 	iny
 	sta     (ptr1),y
-L0013:	jmp     L0013
+	ldx     #$20
+	lda     #$45
+	jsr     _vram_seek
+	lda     #<(_bg)
+	ldx     #>(_bg)
+	jsr     pushax
+	lda     #$04
+	jsr     _vram_data
+	lda     #$09
+	jsr     pusha
+	lda     #$78
+	jsr     _ppu_init
+L0045:	jmp     L0045
 
 .endproc
 

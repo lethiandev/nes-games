@@ -1,8 +1,8 @@
 #ifndef NESLIB_H_INCLUDED
 #define NESLIB_H_INCLUDED
 
-typedef unsigned int  uint;
-typedef unsigned char byte;
+#define BINARY(a,b,c,d,e,f,g,h) \
+    (((a)<<0)|((b)<<1)|((c)<<2)|((d)<<3)|((e)<<4)|((f)<<5)|((g)<<6)|((h)<<7))
 
 #define SPRITE_TILE(bank, ind) ((((byte)ind))|(((byte)bank)<<7))
 #define SPRITE_ATTR(pal, back, flipx, flipy)
@@ -36,25 +36,50 @@ typedef unsigned char byte;
         |+-------- Intensify greens (and darken other colors)
         +--------- Intensify blues (and darken other colors)
  **************************************************/
-#define PPU_CTRL 0x
-#define PPU_MASK
+#define PPU_CTRL 0x09
+#define PPU_MASK 0x78
 
-#define NT_PATTERN(pt)
-#define NT_ADDR(nt)
-#define NT_ATTR(nt)
+#define VRAM_NTWIDTH  32
+#define VRAM_NTHEIGHT 30
+#define VRAM_NTSIZE   0x03C0
+#define VRAM_NTSIZEA  0x0400
 
+//#define VRAM_PATTERN(pt) ((pt)*0x1000) // unused
+#define VRAM_PALETTE(of) (0x3F00  + (of))
+#define VRAM_NTADDR(nt)  (0x2000 + ((nt)*VRAM_NTSIZEA))
+#define VRAM_NTATTR(nt)  (VRAM_NTADDR(nt) + VRAM_NTSIZE)
+
+#define VRAM_NTCOORD(nt, x, y) (VRAM_NTADDR(nt) + (y)*VRAM_NTWIDTH + (x))
+
+typedef unsigned int  uint;
+typedef unsigned char byte;
+
+/**
+    NES sprite structure in given order.
+    x    - horizontal sprite position
+    attr - sprite attribute
+    tile - CHR source tile
+    y    - vertical sprite position
+*/
 typedef struct {
     byte y, tile, attr, x;
 } Sprite;
+
+typedef struct {
+    byte x, y;
+} Scroll;
+
+extern Scroll scroll;
 
 // ppu
 void ppu_vblankwait();
 void __fastcall__ ppu_init(byte ctr, byte mask);
 void ppu_ram2oam();
 
-// vram nametables memory access
-void vram_seek(uint offset);
-void vram_data(const byte *data, uint size);
+// vram memory access
+void __fastcall__ vram_seek(uint offset);
+void __fastcall__ vram_data(const byte *data, byte size);
+void __fastcall__ vram_put(byte value);
 
 // pallete
 void __fastcall__ pal_seek(byte offset);
@@ -62,6 +87,6 @@ void __fastcall__ pal_data(const byte *data);
 void __fastcall__ pal_put(byte color);
 
 // sprites
-Sprite* __fastcall__ spr_get(byte n);
+Sprite* __fastcall__ spr_getptr(byte n);
 
 #endif // NESLIB_H_INCLUDED

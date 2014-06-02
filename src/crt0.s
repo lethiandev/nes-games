@@ -4,6 +4,8 @@
 .export __STARTUP__ : absolute = 1 ; mark as startup
 .export RESET, NMI, IRQ
 
+.export _scroll
+
 .import initlib, donelib, callmain
 .import _main, _sync, zerobss, copydata
 
@@ -16,6 +18,7 @@
 .import __RODATA_LOAD__, __RODATA_RUN__, __RODATA_SIZE__
 
 .include "zeropage.inc"
+
 
 ; 16bits header segment
 .segment "HEADER"
@@ -117,10 +120,11 @@ loadPallete:
     BNE @1
 
     ; PPU default controller and mask
-    LDA #%10010000 ; enable NMI - the rendering
-    STA $2000
-    LDA #%00011110 ; enable sprites, enable background, no clipping on left side
-    STA $2001
+    ; disabled at startup
+    ;LDA #%10010000 ; enable NMI - the rendering
+    ;STA $2000
+    ;LDA #%00011110 ; enable sprites, enable background, no clipping on left side
+    ;STA $2001
 
     ; calc C function
     JSR _main
@@ -138,20 +142,27 @@ NMI:
     ; calc C function
     JSR _sync
 
+    LDA _scroll  ; background scrolling
+    STA $2005
+    LDA _scroll+1
+    STA $2005
+
     ; cleanup PPU process
     LDA #%10010000 ; enable NMI - the rendering
     STA $2000
     LDA #%00011110 ; enable sprites, enable background, no clipping on left side
     STA $2001
-
-    LDA #$00  ; no background scrolling
-    STA $2005
-    STA $2005
     RTI
 
 IRQ:
     RTI
 
+; read-write memory block
+.segment "DATA"
+_scroll:
+    .byte 0, 0
+
+; read-only memory block
 .segment "RODATA"
 defaultPalette:
     .byte $22,$29,$1A,$0F,  $22,$36,$17,$0F,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ;;background palette
