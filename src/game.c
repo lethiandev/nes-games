@@ -2,21 +2,40 @@
 
 Sprite *spr = 0;
 
-const byte bg[] = {
-    0x6b, 0x6c, 0x6d, 0x6f
+const byte bgAttr[] = {
+
 };
 
-void puts(byte x, byte y, const byte *str)
+void puts(byte nt, byte x, byte y, const byte *str)
 {
-    vram_seek(VRAM_NTCOORD(0, x, y));
+    vram_seek(VRAM_NTCOORD(nt, x, y));
 
     while(*str != 0) {
-        if(*str >= 'A') {
-            vram_put(*str - 'A' + 10);
-        }
-        else
-        if(*str >= '0') {
-            vram_put(*str - '0');
+        switch(*str) {
+        case ' ':
+            vram_put(0);
+            break;
+
+        case ',':
+            vram_put(0x26);
+            break;
+
+        case '.':
+            vram_put(0x25);
+            break;
+
+        case '\n':
+            vram_seek(VRAM_NTCOORD(nt, x, ++y));
+            break;
+
+        default:
+            if(*str >= 'A') {
+                vram_put(*str - 'A' + 1);
+            }
+            else if(*str >= '0') {
+                vram_put(*str - '0' + 0x1b);
+            }
+            break;
         }
 
         str++;
@@ -25,27 +44,27 @@ void puts(byte x, byte y, const byte *str)
 
 void sync()
 {
-    scroll.y += 1;
+    if(scroll.x < 0xf0)
+        scroll.x += 1;
+    else {
+        scroll.x = 0xff;
+    }
+    spr->x += 1;
 }
 
 void main()
 {
-    puts(1, 1, "HELLO");
-
-    spr = spr_getptr(0);
+    spr = (Sprite*)0x0200;
     spr->x = 0x80;
     spr->y = 0x80;
-    spr->tile = 0x76;
-    spr->attr = 0x00;
+    spr->tile = 2;
+    spr->attr = 0;
+    puts(1, 5, 5, "HELLO 123.,\nTESTTEST");
 
-    // seek nt addr and write data
-    vram_seek(VRAM_NTCOORD(0, 5, 2));
-    vram_data(bg, 4);
-    //vram_put(0xc5);
-    //vram_seek(0);
-    //vram_data();
+    ppu_init(
+             PPU_CTRL_VBLANK,
+             PPU_MASK_SHOWBG|PPU_MASK_SHOWSPR|PPU_MASK_SPRNOCLIP|PPU_MASK_BGNOCLIP);
 
-    ppu_init(PPU_CTRL,PPU_MASK);
     while(1) {
     }
 }

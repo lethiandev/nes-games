@@ -4,7 +4,7 @@
 .export __STARTUP__ : absolute = 1 ; mark as startup
 .export RESET, NMI, IRQ
 
-.export _scroll
+.export _scroll, _ppu
 
 .import initlib, donelib, callmain
 .import _main, _sync, zerobss, copydata
@@ -48,12 +48,7 @@ RESET:
 
 vblankwait1: ; wait for PPU re-charge
     BIT $2002
-@1:
-    BIT $2002
-    BPL @1
-@2:
-    BIT $2002
-    BPL @2
+    BPL vblankwait1
 
 clearVRAM: ; fill VRAM (nametables) by zeroes
     LDA $2002 ; reset PPU status
@@ -96,12 +91,7 @@ clearRAM: ; fill RAM memory by zeroes
 
 vblankwait2: ; wait for PPU re-charge
     BIT $2002
-@1:
-    BIT $2002
-    BPL @1
-@2:
-    BIT $2002
-    BPL @2
+    BPL vblankwait2
 
     ; fill pallete by default one
     LDA $2002
@@ -142,15 +132,17 @@ NMI:
     ; calc C function
     JSR _sync
 
-    LDA _scroll  ; background scrolling
+    LDA _scroll ; background scrolling
     STA $2005
     LDA _scroll+1
     STA $2005
 
     ; cleanup PPU process
-    LDA #%10010000 ; enable NMI - the rendering
+    LDA _ppu
+    ;LDA #%10000000 ; enable NMI - the rendering
     STA $2000
-    LDA #%00011110 ; enable sprites, enable background, no clipping on left side
+    LDA _ppu+1
+    ;LDA #%00011110 ; enable sprites, enable background, no clipping on left side
     STA $2001
     RTI
 
@@ -162,20 +154,24 @@ IRQ:
 _scroll:
     .byte 0, 0
 
+_ppu: ; default PPU setup
+    ; enable NMI - the rendering
+    ; enable sprites, enable background, no clipping on left side
+    .byte %10000000, %00011110
+
 ; read-only memory block
 .segment "RODATA"
 defaultPalette:
-    .byte $22,$29,$1A,$0F,  $22,$36,$17,$0F,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ;;background palette
-    .byte $22,$1C,$15,$14,  $22,$02,$38,$3C,  $22,$1C,$15,$14,  $22,$02,$38,$3C   ;;sprite palette
+    .incbin "unipon.dat"
 
 ; hardware vectors segment
 .segment "VECTORS"
     ;.word 0,0,0
     .word NMI
     .word RESET
-    .word IRQ
+    .word 0
 
-; binary files
+; CHR-bank binary files
 .segment "CHARS"
     ;.incbin "tileset.chr"
-    .incbin "sprites.chr"
+    .incbin "unipon.chr"

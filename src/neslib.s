@@ -7,6 +7,7 @@
 .export _spr_getptr
 
 .import popa, popax
+.import _ppu
 
 ; include zeropage
 .include "zeropage.inc"
@@ -24,9 +25,11 @@ _ppu_vblankwait: ; void
     RTS
 
 
-; void __fastcall__ ppu_init(byte ctr, byte mask);
-_ppu_init: ; X - ctr mask, A - screen mask
+; void __fastcall__ ppu_init(byte ctrl, byte mask);
+_ppu_init: ; A - ctrl, X - mask
+    STX _ppu
     STX $2000
+    STA _ppu+1
     STA $2001
     RTS
 

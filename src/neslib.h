@@ -36,7 +36,21 @@
         |+-------- Intensify greens (and darken other colors)
         +--------- Intensify blues (and darken other colors)
  **************************************************/
+#define PPU_CTRL_BASENT(n)      ((n)&0x03)
+#define PPU_CTRL_SPR_ALTPATTERN ((0x01)<<3)
+#define PPU_CTRL_BG_ALTPATTERN  ((0x01)<<4)
+#define PPU_CTRL_SPR_8X16       ((0x01)<<5)
+#define PPU_CTRL_VBLANK         ((0x01)<<7)
 #define PPU_CTRL 0x09
+
+#define PPU_MASK_GRAYSCALE (0x01)
+#define PPU_MASK_BGNOCLIP  ((0x01)<<1)
+#define PPU_MASK_SPRNOCLIP ((0x01)<<2)
+#define PPU_MASK_SHOWBG    ((0x01)<<3)
+#define PPU_MASK_SHOWSPR   ((0x01)<<4)
+#define PPU_MASK_INTRED    ((0x01)<<5)
+#define PPU_MASK_INTGREEN  ((0x01)<<6)
+#define PPU_MASK_INTBLUE   ((0x01)<<7)
 #define PPU_MASK 0x78
 
 #define VRAM_NTWIDTH  32
@@ -54,6 +68,10 @@
 typedef unsigned int  uint;
 typedef unsigned char byte;
 
+typedef struct {
+    byte mask, ctrl;
+} PPU;
+
 /**
     NES sprite structure in given order.
     x    - horizontal sprite position
@@ -67,13 +85,14 @@ typedef struct {
 
 typedef struct {
     byte x, y;
-} Scroll;
+} Point;
 
-extern Scroll scroll;
+extern Point scroll;
+extern PPU   ppu;
 
 // ppu
 void ppu_vblankwait();
-void __fastcall__ ppu_init(byte ctr, byte mask);
+void __fastcall__ ppu_init(byte ctrl, byte mask);
 void ppu_ram2oam();
 
 // vram memory access

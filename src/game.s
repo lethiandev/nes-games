@@ -14,11 +14,9 @@
 	.import		_scroll
 	.import		_ppu_init
 	.import		_vram_seek
-	.import		_vram_data
 	.import		_vram_put
-	.import		_spr_getptr
 	.export		_spr
-	.export		_bg
+	.export		_bgAttr
 	.export		_puts
 	.export		_sync
 	.export		_main
@@ -30,16 +28,13 @@ _spr:
 
 .segment	"RODATA"
 
-_bg:
-	.byte	$6B
-	.byte	$6C
-	.byte	$6D
-	.byte	$6F
-L0024:
-	.byte	$48,$45,$4C,$4C,$4F,$00
+_bgAttr:
+L004C:
+	.byte	$48,$45,$4C,$4C,$4F,$20,$31,$32,$33,$2E,$2C,$0A,$54,$45,$53,$54
+	.byte	$54,$45,$53,$54,$00
 
 ; ---------------------------------------------------------------
-; void __near__ puts (unsigned char, unsigned char, __near__ const unsigned char*)
+; void __near__ puts (unsigned char, unsigned char, unsigned char, __near__ const unsigned char*)
 ; ---------------------------------------------------------------
 
 .segment	"CODE"
@@ -48,11 +43,11 @@ L0024:
 
 .segment	"CODE"
 
-	ldy     #$02
-	ldx     #$00
+	ldy     #$04
 	lda     (sp),y
-	jsr     shlax4
-	jsr     shlax1
+	tax
+	lda     #$00
+	jsr     shlax2
 	sta     ptr1
 	stx     ptr1+1
 	lda     #$00
@@ -62,22 +57,89 @@ L0024:
 	lda     #$20
 	adc     ptr1+1
 	sta     ptr1+1
+	ldx     #$00
+	ldy     #$02
+	lda     (sp),y
+	jsr     shlax4
+	jsr     shlax1
+	clc
+	adc     ptr1
+	sta     ptr1
+	txa
+	adc     ptr1+1
+	sta     ptr1+1
 	iny
 	lda     (sp),y
 	clc
 	adc     ptr1
 	ldx     ptr1+1
-	bcc     L0043
+	bcc     L005F
 	inx
-L0043:	jsr     _vram_seek
+L005F:	jsr     _vram_seek
+	jmp     L000D
+L000B:	jsr     ldax0sp
+	sta     ptr1
+	stx     ptr1+1
+	ldy     #$00
+	lda     (ptr1),y
+	cmp     #$0A
+	beq     L001F
+	cmp     #$20
+	beq     L0013
+	cmp     #$2C
+	beq     L0017
+	cmp     #$2E
+	beq     L001B
+	jmp     L0028
+L0013:	tya
+	jmp     L0061
+L0017:	lda     #$26
+	jmp     L0061
+L001B:	lda     #$25
+	jmp     L0061
+L001F:	ldy     #$04
+	lda     (sp),y
+	tax
+	lda     #$00
+	jsr     shlax2
+	sta     ptr1
+	stx     ptr1+1
+	lda     #$00
+	clc
+	adc     ptr1
+	pha
+	lda     #$20
+	adc     ptr1+1
+	tax
+	pla
+	jsr     pushax
+	ldy     #$04
+	ldx     #$00
+	clc
+	lda     #$01
+	adc     (sp),y
+	sta     (sp),y
+	jsr     shlax4
+	jsr     shlax1
+	jsr     tosaddax
+	sta     ptr1
+	stx     ptr1+1
+	ldy     #$03
+	lda     (sp),y
+	clc
+	adc     ptr1
+	ldx     ptr1+1
+	bcc     L0060
+	inx
+L0060:	jsr     _vram_seek
 	jmp     L0011
-L000F:	jsr     ldax0sp
+L0028:	jsr     ldax0sp
 	sta     ptr1
 	stx     ptr1+1
 	ldy     #$00
 	lda     (ptr1),y
 	cmp     #$41
-	bcc     L0013
+	bcc     L0029
 	jsr     ldax0sp
 	sta     ptr1
 	stx     ptr1+1
@@ -85,16 +147,16 @@ L000F:	jsr     ldax0sp
 	lda     (ptr1,x)
 	ldy     #$41
 	jsr     decaxy
-	ldy     #$0A
-	jsr     incaxy
-	jmp     L0044
-L0013:	jsr     ldax0sp
+	clc
+	adc     #$01
+	jmp     L0061
+L0029:	jsr     ldax0sp
 	sta     ptr1
 	stx     ptr1+1
 	ldy     #$00
 	lda     (ptr1),y
 	cmp     #$30
-	bcc     L0018
+	bcc     L0011
 	jsr     ldax0sp
 	sta     ptr1
 	stx     ptr1+1
@@ -102,17 +164,19 @@ L0013:	jsr     ldax0sp
 	lda     (ptr1,x)
 	ldy     #$30
 	jsr     decaxy
-L0044:	jsr     _vram_put
-L0018:	jsr     ldax0sp
+	ldy     #$1B
+	jsr     incaxy
+L0061:	jsr     _vram_put
+L0011:	jsr     ldax0sp
 	jsr     incax1
 	jsr     stax0sp
-L0011:	jsr     ldax0sp
+L000D:	jsr     ldax0sp
 	sta     ptr1
 	stx     ptr1+1
 	ldy     #$00
 	lda     (ptr1),y
-	bne     L000F
-	jmp     incsp4
+	jne     L000B
+	jmp     incsp5
 
 .endproc
 
@@ -126,7 +190,22 @@ L0011:	jsr     ldax0sp
 
 .segment	"CODE"
 
-	inc     _scroll+1
+	lda     _scroll
+	cmp     #$F0
+	bcs     L0062
+	inc     _scroll
+	jmp     L0038
+L0062:	lda     #$FF
+	sta     _scroll
+L0038:	lda     _spr
+	sta     ptr1
+	lda     _spr+1
+	sta     ptr1+1
+	ldy     #$03
+	lda     (ptr1),y
+	clc
+	adc     #$01
+	sta     (ptr1),y
 	rts
 
 .endproc
@@ -141,15 +220,8 @@ L0011:	jsr     ldax0sp
 
 .segment	"CODE"
 
-	lda     #$01
-	jsr     pusha
-	jsr     pusha
-	lda     #<(L0024)
-	ldx     #>(L0024)
-	jsr     pushax
-	jsr     _puts
+	ldx     #$02
 	lda     #$00
-	jsr     _spr_getptr
 	sta     _spr
 	stx     _spr+1
 	sta     ptr1
@@ -168,7 +240,7 @@ L0011:	jsr     ldax0sp
 	sta     ptr1
 	lda     _spr+1
 	sta     ptr1+1
-	lda     #$76
+	txa
 	iny
 	sta     (ptr1),y
 	lda     _spr
@@ -178,19 +250,20 @@ L0011:	jsr     ldax0sp
 	lda     #$00
 	iny
 	sta     (ptr1),y
-	ldx     #$20
-	lda     #$45
-	jsr     _vram_seek
-	lda     #<(_bg)
-	ldx     #>(_bg)
-	jsr     pushax
-	lda     #$04
-	jsr     _vram_data
-	lda     #$09
+	lda     #$01
 	jsr     pusha
-	lda     #$78
+	lda     #$05
+	jsr     pusha
+	jsr     pusha
+	lda     #<(L004C)
+	ldx     #>(L004C)
+	jsr     pushax
+	jsr     _puts
+	lda     #$80
+	jsr     pusha
+	lda     #$1E
 	jsr     _ppu_init
-L0045:	jmp     L0045
+L0063:	jmp     L0063
 
 .endproc
 
